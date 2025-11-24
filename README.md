@@ -2,12 +2,13 @@
 
 All new commits and updates will be maintained there.
 
-
 # CodeFort 
 
 **CodeFort** is a lightweight Kotlin-based security library for Android. It provides modular runtime security features to help developers detect tampering, validate integrity, and protect user data—without requiring advanced security expertise.
 
 ---
+
+The library use the CodeFort_Core library (https://codeberg.org/mamila/CodeFort_Core) for the features (App signature verification, App tampering detection, Emulator detection, Frida and hook detection, Encrypting)
 
 ## Features
 
@@ -22,6 +23,7 @@ CodeFort currently offers:
 - Secure shared preferences (AES and Keystore-backed)
 - Secure logging manager
 - Certificate pinning (OkHttp support)
+- Encrypting
 
 All components are modular and can be used independently or together.
 
@@ -75,9 +77,12 @@ interface AppSignatureManager {
     fun appSignature(context: Context, certificateSignature: ByteArray, onAppSignatureValid: () -> Unit, onAppSignatureInvalid: () -> Unit)
     fun appSignature(context: Context, certificateSignature: String, onAppSignatureValid: () -> Unit, onAppSignatureInvalid: () -> Unit)
     fun appSignature(context: Context, certificateSignature: String, xorKey: Char = 0x5A.toChar(), reverse: Boolean = true, salt: String? = null, onAppSignatureValid: () -> Unit, onAppSignatureInvalid: () -> Unit)
+    fun appSignature(context: Context, certificateSignature: String, algorithm : List<String>, onAppSignatureValid: () -> Unit, onAppSignatureInvalid: () -> Unit)
     fun appSignature(context: Context, certificateSignature: ByteArray) : Boolean
     fun appSignature(context: Context, certificateSignature: String) : Boolean
     fun appSignature(context: Context, certificateSignature: String, xorKey: Char = 0x5A.toChar(), reverse: Boolean = true, salt: String? = null) : Boolean
+    fun appSignature(context: Context, certificateSignature: String, algorithm : List<String>) : Boolean
+
 }
 
 ```
@@ -86,6 +91,7 @@ certificateHash can be:
   - the bytearray of the sha256 key of a file .jks
   - the base64 string of the sha256 key of a file .jks
   - the base64 string of the sha256 key of a file .jks that is xorred, reversed and with a salt attached.
+  - an encoded string, the algorithm to decode it can be passed in the algorithm field. The decode is done with the CodeFort_Core Encrypting feature. Documentation can be found here (https://codeberg.org/mamila/CodeFort_Core)
 
 To extract the SHA-256 hash from a .jks file:
 
@@ -285,6 +291,50 @@ Example
                 LoggingLevel.Info
             )
 ```
+
+### Encryption
+
+Encryption of strings or byteArrays. 
+
+```kotlin
+interface CryptoManager {
+
+    fun transformation(input: String, pipeline: List<String>) : String
+    fun transformation(input: ByteArray, pipeline: List<String>) : String
+
+}
+```
+**transformation**: Encrypt the input string applying the pipeline of transformations provided.  
+**transformation**: Encrypt the input bytearray applying the pipeline of transformations provided.    
+ 
+
+Example
+```kotlin
+ CodeFort.cryptoManager?.transformation(
+                password,
+                listOf("r", "s")
+            )
+```
+
+#### Transformations Pipeline
+
+The possible transformations could be: 
+
+    - "r": Rotation. The input is reversed. 
+    - "e": Base64Encoding. The input is encoded in base64.
+    - "d": Base64Decoding. The input is decoded from base64.
+    - "x_{c}" : The input is put in xor with the char c.
+    - "p_{string}" : The input is concatenated with string.
+    - "u_{string}" : The input is splitted removing string at the end. 
+    - "s" : The input is encrypted with sha256
+    - "ae_{password}" : The input is encrypted using AES GCM with password as key.
+    - "ad_{password}" : The input is decrypted using AES GCM with password as key. 
+
+A pipeline is a set of transformations that are applied one after the other. The only constraint that if there is an operation of ae it must be at the end of the pipeline and if there is an operation of ad it must be at the start of the pipeline. 
+
+If those are instead in the middle of the pipeline, that step is skipped. 
+
+
 ### Secure Shared Prefs
 
 Encrypts preferences with Android Keystore. Auto-reset on key failure.
