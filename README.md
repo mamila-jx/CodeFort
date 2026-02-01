@@ -1,6 +1,6 @@
-⚠️ This project has been moved to Codeberg: [https://codeberg.org/mamila/CodeFort](https://codeberg.org/mamila/CodeFort)
+This GitHub repository contains documentation only.
+The full source code is hosted on Codeberg [https://codeberg.org/mamila/CodeFort](https://codeberg.org/mamila/CodeFort), an EU-based hosting service, chosen for data sovereignty and security considerations.
 
-All new commits and updates will be maintained there.
 
 # CodeFort 
 
@@ -519,3 +519,4 @@ Example:
 ## LICENSE
 
 This project is licensed under the Apache License. It was created for fun—if it’s useful, feel free to use it.
+
